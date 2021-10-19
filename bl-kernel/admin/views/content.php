@@ -11,6 +11,7 @@ function table($type) {
 	global $static;
 	global $sticky;
 	global $autosave;
+	$categories = getCategories();
 
 	if ($type=='published') {
 		$list = $published;
@@ -55,13 +56,17 @@ function table($type) {
 	} elseif ($type=='autosave') {
 		$list = $autosave;
 	}
-
+	if ($type=='published') { echo '<div class="container mt-4"><div class="row gx-1"><div class="col-10"><input id="publishedSearch" class="form-control" type="text" placeholder="'.$L->g('Search').'"></div><div class="col-2"><input class="form-control btn-secondary" type="button" id="publishedClear" value="'.$L->g('Reset').'"/></div></div></div>'; }
+	if ($type=='static') { echo '<div class="container mt-4"><div class="row gx-1"><div class="col-10"><input id="staticSearch" class="form-control" type="text" placeholder="'.$L->g('Search').'"></div><div class="col-2"><input class="form-control btn-secondary" type="button" id="staticClear" value="'.$L->g('Reset').'"/></div></div></div>'; }	
+	if ($type=='sticky') { echo '<div class="container mt-4"><div class="row gx-1"><div class="col-10"><input id="stickySearch" class="form-control" type="text" placeholder="'.$L->g('Search').'"></div><div class="col-2"><input class="form-control btn-secondary" type="button" id="stickyClear" value="'.$L->g('Reset').'"/></div></div></div>'; }
 	echo '
 	<table class="table mt-3">
 		<thead>
-			<tr>
-				<th class="border-0" scope="col">'.$L->g('Title').'</th>
-	';
+			<tr>';
+	if ($type=='published' || $type=='sticky') {
+		echo '<th class="border-0 d-none d-lg-table-cell" scope="col">'.$L->g('Category').'</th>';
+	}
+		echo '<th class="border-0" scope="col">'.$L->g('Title').'</th>';
 
 	if ($type=='published' || $type=='static' || $type=='sticky') {
 		echo '<th class="border-0 d-none d-lg-table-cell" scope="col">'.$L->g('URL').'</th>';
@@ -70,7 +75,7 @@ function table($type) {
 	echo '			<th class="border-0 text-center d-sm-table-cell" scope="col">'.$L->g('Actions').'</th>
 			</tr>
 		</thead>
-		<tbody>
+		<tbody id="contentTable">
 	';
 
 	if ( (ORDER_BY=='position') || $type=='static' ) {
@@ -86,7 +91,8 @@ function table($type) {
 							.'</a>
 						</div>
 						<div>
-							<p style="font-size: 0.8em" class="m-0 text-uppercase text-muted">'.( ((ORDER_BY=='position') || ($type!='published'))?$L->g('Position').': '.$page->position():$page->date(MANAGE_CONTENT_DATE_FORMAT) ).'</p>
+							<p style="font-size: 0.8em" class="m-0 text-uppercase text-muted">'.( ((ORDER_BY=='position') || ($type!='published'))?$L->g('Position').': '.$page->position():$page->date(MANAGE_CONTENT_DATE_FORMAT) );
+                    echo '</p>
 						</div>
 					</td>';
 
@@ -95,11 +101,11 @@ function table($type) {
 					echo '<td class="d-none d-lg-table-cell"><a target="_blank" href="'.$page->permalink().'">'.$friendlyURL.'</a></td>';
 					}
 
-					echo '<td class="contentTools pt-3 text-center d-sm-table-cell">'.PHP_EOL;
+					echo '<td class="contentTools pt-3 d-sm-table-cell">'.PHP_EOL;
 					echo '<a class="text-secondary d-none d-md-inline" target="_blank" href="'.$page->permalink().'"><i class="fa fa-desktop"></i>'.$L->g('View').'</a>'.PHP_EOL;
-					echo '<a class="text-secondary d-none d-md-inline ml-2" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$page->key().'"><i class="fa fa-edit"></i>'.$L->g('Edit').'</a>'.PHP_EOL;
+					echo '<br><a class="text-secondary d-none d-md-inline" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$page->key().'"><i class="fa fa-edit"></i>'.$L->g('Edit').'</a>'.PHP_EOL;
 					if (count($page->children())==0) {
-						echo '<a href="#" class="ml-2 text-danger deletePageButton d-block d-sm-inline" data-toggle="modal" data-target="#jsdeletePageModal" data-key="'.$page->key().'"><i class="fa fa-trash"></i>'.$L->g('Delete').'</a>'.PHP_EOL;
+						echo '<br><a href="#" class="text-danger deletePageButton d-block d-sm-inline" data-toggle="modal" data-target="#jsdeletePageModal" data-key="'.$page->key().'"><i class="fa fa-trash"></i>'.$L->g('Delete').'</a>'.PHP_EOL;
 					}
 					echo '</td>';
 
@@ -108,6 +114,13 @@ function table($type) {
 					foreach ($page->children() as $child) {
 						//if ($child->published()) {
 						echo '<tr>
+                        <td class="pt-3 text-muted">
+                            <div>
+                            <p>';
+                                if ($page->category()) { echo $page->category(); }
+                        echo'</p>
+                            </div>
+                        </td>						
 						<td class="child">
 							<div>
 								<a style="font-size: 1.1em" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$child->key().'">'
@@ -115,21 +128,22 @@ function table($type) {
 								.'</a>
 							</div>
 							<div>
-								<p style="font-size: 0.8em" class="m-0 text-uppercase text-muted">'.( ((ORDER_BY=='position') || ($type!='published'))?$L->g('Position').': '.$child->position():$child->date(MANAGE_CONTENT_DATE_FORMAT) ).'</p>
+								<p style="font-size: 0.8em" class="m-0 text-uppercase text-muted">'.( ((ORDER_BY=='position') || ($type!='published'))?$L->g('Position').': '.$child->position():$child->date(MANAGE_CONTENT_DATE_FORMAT) );
+                        echo '</p>
 							</div>
 						</td>';
-
+						
 						if ($type=='published' || $type=='static' || $type=='sticky') {
 						$friendlyURL = Text::isEmpty($url->filters('page')) ? '/'.$child->key() : '/'.$url->filters('page').'/'.$child->key();
 						echo '<td class="d-none d-lg-table-cell"><a target="_blank" href="'.$child->permalink().'">'.$friendlyURL.'</a></td>';
 						}
 
-						echo '<td class="contentTools pt-3 text-center d-sm-table-cell">'.PHP_EOL;
+						echo '<td class="contentTools pt-3 d-sm-table-cell">'.PHP_EOL;
 						if ($type=='published' || $type=='static' || $type=='sticky') {
 						echo '<a class="text-secondary d-none d-md-inline" target="_blank" href="'.$child->permalink().'"><i class="fa fa-desktop"></i>'.$L->g('View').'</a>'.PHP_EOL;
 						}
-						echo '<a class="text-secondary d-none d-md-inline ml-2" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$child->key().'"><i class="fa fa-edit"></i>'.$L->g('Edit').'</a>'.PHP_EOL;
-						echo '<a class="ml-2 text-danger deletePageButton d-block d-sm-inline" href="#" data-toggle="modal" data-target="#jsdeletePageModal" data-key="'.$child->key().'"><i class="fa fa-trash"></i>'.$L->g('Delete').'</a>'.PHP_EOL;
+						echo '<br><a class="text-secondary d-none d-md-inline" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$child->key().'"><i class="fa fa-edit"></i>'.$L->g('Edit').'</a>'.PHP_EOL;
+						echo '<br><a class="text-danger deletePageButton d-block d-sm-inline" href="#" data-toggle="modal" data-target="#jsdeletePageModal" data-key="'.$child->key().'"><i class="fa fa-trash"></i>'.$L->g('Delete').'</a>'.PHP_EOL;
 						echo '</td>';
 
 						echo '</tr>';
@@ -144,15 +158,23 @@ function table($type) {
 		foreach ($list as $pageKey) {
 			try {
 				$page = new Page($pageKey);
-				echo '<tr>';
-				echo '<td class="pt-3">
+				echo '<tr>
+                <td class="pt-3 text-muted">
+					<div>
+                    <p>';
+                        if ($page->category()) { echo $page->category(); }
+                echo'</p>
+					</div>
+                </td>				
+				<td class="pt-3">
 					<div>
 						<a style="font-size: 1.1em" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$page->key().'">'
 						.($page->title()?$page->title():'<span class="label-empty-title">'.$L->g('Empty title').'</span> ')
 						.'</a>
 					</div>
 					<div>
-						<p style="font-size: 0.8em" class="m-0 text-uppercase text-muted">'.( ($type=='scheduled')?$L->g('Scheduled').': '.$page->date(SCHEDULED_DATE_FORMAT):$page->date(MANAGE_CONTENT_DATE_FORMAT) ).'</p>
+						<p style="font-size: 0.8em" class="m-0 text-uppercase text-muted">'.( ($type=='scheduled')?$L->g('Scheduled').': '.$page->date(SCHEDULED_DATE_FORMAT):$page->date(MANAGE_CONTENT_DATE_FORMAT) );
+				echo '</p>
 					</div>
 				</td>';
 
@@ -161,13 +183,13 @@ function table($type) {
 				echo '<td class="pt-3 d-none d-lg-table-cell"><a target="_blank" href="'.$page->permalink().'">'.$friendlyURL.'</a></td>';
 				}
 
-				echo '<td class="contentTools pt-3 text-center d-sm-table-cell">'.PHP_EOL;
+				echo '<td class="contentTools pt-3 d-sm-table-cell">'.PHP_EOL;
 				if ($type=='published' || $type=='static' || $type=='sticky') {
 				echo '<a class="text-secondary d-none d-md-inline" target="_blank" href="'.$page->permalink().'"><i class="fa fa-desktop"></i>'.$L->g('View').'</a>'.PHP_EOL;
 				}
-				echo '<a class="text-secondary d-none d-md-inline ml-2" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$page->key().'"><i class="fa fa-edit"></i>'.$L->g('Edit').'</a>'.PHP_EOL;
+				echo '<br><a class="text-secondary d-none d-md-inline" href="'.HTML_PATH_ADMIN_ROOT.'edit-content/'.$page->key().'"><i class="fa fa-edit"></i>'.$L->g('Edit').'</a>'.PHP_EOL;
 				if (count($page->children())==0) {
-					echo '<a href="#" class="ml-2 text-danger deletePageButton d-block d-sm-inline" data-toggle="modal" data-target="#jsdeletePageModal" data-key="'.$page->key().'"><i class="fa fa-trash"></i>'.$L->g('Delete').'</a>'.PHP_EOL;
+					echo '<br><a href="#" class="text-danger deletePageButton d-block d-sm-inline" data-toggle="modal" data-target="#jsdeletePageModal" data-key="'.$page->key().'"><i class="fa fa-trash"></i>'.$L->g('Delete').'</a>'.PHP_EOL;
 				}
 				echo '</td>';
 
@@ -325,3 +347,45 @@ $(document).ready(function() {
 	const anchor = window.location.hash;
 	$(`a[href="${anchor}"]`).tab('show');
 </script>
+
+<script>
+$(document).ready(function(){
+
+  $("#publishedSearch").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#contentTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+	
+  $('#publishedClear').click(function(){				
+	   $('input[id=publishedSearch]').val('');
+	   $( "#publishedSearch" ).keyup();
+  });
+	
+  $("#staticSearch").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#contentTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+	
+  $('#staticClear').click(function(){				
+	   $('input[id=staticSearch]').val('');
+	   $( "#staticSearch" ).keyup();
+  });
+	
+  $("#stickySearch").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#contentTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+	
+  $('#stickyClear').click(function(){				
+	   $('input[id=stickySearch]').val('');
+	   $( "#stickySearch" ).keyup();
+  });
+	
+});
+</script> 
